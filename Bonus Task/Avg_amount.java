@@ -20,7 +20,6 @@ public class AverageTotalAmount {
   public static class AverageTotalAmountMapper
        extends Mapper<Object, Text, Text, FloatWritable>{
 
-    private final static FloatWritable one = new FloatWritable(1);
     private Text word = new Text();
 
     public void map(Object key, Text value, Context context
@@ -31,11 +30,13 @@ public class AverageTotalAmount {
       if (columns.length == 8 && !columns[0].equals("pickup_time"))
       {
         SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat day = new SimpleDateFormat("yyyy-MM-dd");
         try{
           Date date = df.parse(columns[0]);
           SimpleDateFormat newdf = new SimpleDateFormat("HH");
           String datestring = newdf.format(date) + ":00-" + newdf.format(date) +":59";
-          context.write(new Text(datestring), new FloatWritable(Float.parseFloat(columns[7])), one);
+          if (day.parse(columns[0].substring(0,10)).compareTo(day.parse("2020-02-29")) != 0) //drop data out of range
+            context.write(new Text(datestring), new FloatWritable(Float.parseFloat(columns[7])));
         } catch (ParseException e){
           e.printStackTrace();
         }
@@ -66,7 +67,7 @@ public class AverageTotalAmount {
     Job job = Job.getInstance(conf, "word count");
     job.setJarByClass(AverageTotalAmount.class);
     job.setMapperClass(AverageTotalAmountMapper.class);
-    job.setCombinerClass(AverageTotalAmountReducer.class);
+    //job.setCombinerClass(AverageTotalAmountReducer.class);
     job.setReducerClass(AverageTotalAmountReducer.class);
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(FloatWritable.class);
